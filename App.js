@@ -12,6 +12,7 @@ import {
 import { theme } from "./colors";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Fontisto from "@expo/vector-icons/Fontisto";
+import AntDesign from "@expo/vector-icons/AntDesign";
 
 const STORAGE_KEY = "myKey";
 const STATUS_KEY = "statusKey";
@@ -22,6 +23,7 @@ export default function App() {
   const [working, setWorking] = useState();
   const [doneTravel, setDoneTravel] = useState(false);
   const [doneWork, setDoneWork] = useState(false);
+  const [editText, setEditText] = useState("");
   const [text, setText] = useState("");
   const [toDos, setToDos] = useState({});
   useEffect(() => {
@@ -33,6 +35,7 @@ export default function App() {
   const travel = () => setWorking(false);
   const work = () => setWorking(true);
   const onChangeText = (payload) => setText(payload);
+  const onChangeEditText = (payload) => setEditText(payload);
   useEffect(() => {
     if (working !== undefined && working !== null) {
       saveWorking();
@@ -48,7 +51,7 @@ export default function App() {
       saveDoneWork();
     }
   }, [doneWork]);
-  const toggle = (key) => {
+  const checkBoxToggle = (key) => {
     const newToDos = { ...toDos };
     newToDos[key].done = !newToDos[key].done;
     setToDos(newToDos);
@@ -97,7 +100,6 @@ export default function App() {
       console.log("Invalid value for working", working);
     }
   };
-
   const loadWorking = async () => {
     try {
       const status = await AsyncStorage.getItem(STATUS_KEY);
@@ -108,7 +110,6 @@ export default function App() {
       console.log(error);
     }
   };
-
   const saveToDos = async (toSave) => {
     if (toSave !== undefined && toSave !== null) {
       await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
@@ -126,7 +127,25 @@ export default function App() {
       console.log(error);
     }
   };
+  const editToggle = async (key) => {
+    const newToDos = { ...toDos };
+    newToDos[key].edit = !newToDos[key].edit;
+    setToDos(newToDos);
 
+    console.log(newToDos);
+  };
+  const editToDos = async (key) => {
+    if (editText === "") {
+      return Alert.alert("Attention!", "Nothing toDo :(");
+    }
+    const newToDos = { ...toDos };
+    newToDos[key].text = editText;
+    setToDos(newToDos);
+    editToggle(key);
+    setEditText("");
+    await saveToDos(newToDos);
+    console.log(newToDos);
+  };
   const addToDo = async () => {
     if (text === "") {
       return;
@@ -136,7 +155,7 @@ export default function App() {
     }); */
     const newToDos = {
       ...toDos,
-      [Date.now()]: { text, working, done: false },
+      [Date.now()]: { text, working, done: false, edit: false },
     };
     setToDos(newToDos);
     await saveToDos(newToDos);
@@ -200,10 +219,53 @@ export default function App() {
           // 우측 working은 useState의 값이다.
           toDos[key].working === working ? (
             <View style={styles.toDo} key={key}>
-              <Text style={styles.toDoText}>{toDos[key].text}</Text>
+              {toDos[key].edit ? (
+                <View style={styles.editContainer}>
+                  <TextInput
+                    autoFocus={true}
+                    onSubmitEditing={() => editToDos(key)}
+                    onChangeText={onChangeEditText}
+                    placeholder="edit"
+                    value={editText}
+                    style={styles.eidtInput}
+                  />
+                  <TouchableOpacity>
+                    <AntDesign
+                      onPress={() => editToDos(key)}
+                      style={{
+                        color: "white",
+                        marginLeft: 10,
+                        borderRadius: "100%",
+                      }}
+                      size={25}
+                      name="edit"
+                    />
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <Text style={styles.toDoText}>{toDos[key].text}</Text>
+              )}
+
               <Text>
+                {toDos[key].done ? (
+                  <View style={styles.edit}>
+                    <Fontisto name="like" size={20} color="#4adeb6" />
+                  </View>
+                ) : (
+                  <TouchableOpacity
+                    onPress={() => editToggle(key)}
+                    style={styles.edit}
+                  >
+                    <Fontisto
+                      name="player-settings"
+                      size={20}
+                      color={"white"}
+                    />
+                  </TouchableOpacity>
+                )}
+
                 <TouchableOpacity
-                  onPress={() => toggle(key)}
+                  onPress={() => checkBoxToggle(key)}
                   style={styles.toDoBox}
                 >
                   {toDos[key].done ? (
@@ -262,7 +324,7 @@ const styles = StyleSheet.create({
     backgroundColor: theme.grey,
     marginBottom: 10,
     paddingVertical: 20,
-    paddingHorizontal: 40,
+    paddingHorizontal: 20,
     borderRadius: 15,
     flexDirection: "row",
     alignItems: "center",
@@ -271,5 +333,21 @@ const styles = StyleSheet.create({
   toDoText: { color: "white", fontSize: 16, fontWeight: "500" },
   toDoBox: {
     marginRight: 20,
+  },
+  edit: {
+    marginRight: 30,
+  },
+  editContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  eidtInput: {
+    color: "black",
+    backgroundColor: "white",
+    paddingVertical: 10,
+    paddingHorizontal: 10,
+    borderRadius: 10,
+    fontSize: 18,
+    width: 130,
   },
 });
