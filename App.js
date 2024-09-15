@@ -56,7 +56,6 @@ export default function App() {
     newToDos[key].done = !newToDos[key].done;
     setToDos(newToDos);
     saveToDos(newToDos);
-    console.log(newToDos);
   };
 
   const saveDoneWork = async () => {
